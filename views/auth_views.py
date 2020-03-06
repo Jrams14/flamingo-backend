@@ -32,7 +32,6 @@ def token_required(f):
 
 
 @app.route('/user', methods=['GET'])
-@token_required
 def get_all_users():
     users = User.query.all()
 
@@ -77,7 +76,7 @@ def login():
 
 @app.route('/user/<public_id>', methods=['GET'])
 @token_required
-def get_user(public_id):
+def get_user(current_user, public_id):
     user = User.query.filter_by(public_id = public_id).first()
 
     if not user:
