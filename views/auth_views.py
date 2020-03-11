@@ -45,34 +45,56 @@ def get_all_users():
         output.append(user_data)
     return jsonify({'users': output})
 
-@app.route('/user', methods=['POST'])
+@app.route('/register', methods=['POST'])
 def create_user():
     data = request.get_json()
     hashed_password = generate_password_hash(data['password'], method = 'sha256')
 
-    user = User(public_id = str(uuid.uuid4()), name = data['name'], password = hashed_password)
+    user = User(public_id = str(uuid.uuid4()), password = hashed_password, first_name = data['first'], last_name = data['last'], username = data['username'])
     db.session.add(user)
     db.session.commit()
-    return jsonify({'message': 'New User Created!'})
+
+    token = jwt.encode({'public_id': user.public_id,'first' : user.first_name, 'last': user.last_name, 'username': user.username, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes = 30)}, app.config['SECRET_KEY'])
+
+    response_object = {
+                    'status': 'success',
+                    'message': 'User created',
+                    'auth_token': token.decode('UTF-8')
+                }
+    return make_response(jsonify(response_object)), 200
 
 @app.route('/login', methods = ['POST'])
 def login():
-    auth = request.authorization
+    data = request.get_json()
 
-    if not auth or not auth.username or not auth.password:
-        return make_response('Could not verify', 401, {'WW-Authenticate': 'Basic realm="login required"'})
+    try:
+        user = User.query.filter_by(username = data['username']).first()
+        print(user.username)
 
-    user = User.query.filter_by(name = auth.username).first()
+        if user and check_password_hash(user.password, data['password']):
+            token = jwt.encode({'public_id': user.public_id,'first' : user.first_name, 'last': user.last_name, 'username': user.username, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes = 30)}, app.config['SECRET_KEY'])
 
-    if not user:
-        return make_response('Could not verify', 401, {'WW-Authenticate': 'Basic realm="login required"'})
+            response_object = {
+                            'status': 'success',
+                            'message': 'Successfully logged in',
+                            'auth_token': token.decode('UTF-8')
+                        }
+            return make_response(jsonify(response_object)), 200
 
-    if check_password_hash(user.password, auth.password):
-        token = jwt.encode({'public_id': user.public_id,'name' : user.name, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes = 30)}, app.config['SECRET_KEY'])
+        else:
+            response_object = {
+                            'status': 'fail',
+                            'message': 'User not found',
+                        }
+            return make_response(jsonify(response_object)), 401
 
-        return jsonify({'token': token.decode('UTF-8')})
-
-    return make_response('Could not verify', 401, {'WW-Authenticate': 'Basic realm="login required"'})
+    except Exception as e:
+        print(e)
+        response_object = {
+            'status': 'fail',
+            'message': 'Try again'
+        }
+        return make_response(jsonify(response_object)), 500
 
 @app.route('/user/<public_id>', methods=['GET'])
 @token_required
