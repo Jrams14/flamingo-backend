@@ -40,8 +40,8 @@ def get_all_users():
     for user in users:
         user_data = {}
         user_data['public_id'] = user.public_id
-        user_data['name'] = user.name
-        user_data['password'] = user.password
+        user_data['first'] = user.first_name
+        user_data['last'] = user.last_name
         output.append(user_data)
     return jsonify({'users': output})
 
@@ -79,14 +79,14 @@ def login():
                             'message': 'Successfully logged in',
                             'auth_token': token.decode('UTF-8')
                         }
-            return make_response(jsonify(response_object)), 200
+            return make_response(jsonify(response_object))
 
         else:
             response_object = {
                             'status': 'fail',
                             'message': 'User not found',
                         }
-            return make_response(jsonify(response_object)), 401
+            return make_response(jsonify(response_object))
 
     except Exception as e:
         print(e)
@@ -94,26 +94,38 @@ def login():
             'status': 'fail',
             'message': 'Try again'
         }
-        return make_response(jsonify(response_object)), 500
+        return make_response(jsonify(response_object))
 
 @app.route('/user/<public_id>', methods=['GET'])
-@token_required
-def get_user(current_user, public_id):
+def get_user(public_id):
     user = User.query.filter_by(public_id = public_id).first()
 
     if not user:
-        return jsonify({'message': 'No user found'})
+        response_object = {
+            'status': 'fail',
+            'message': 'No user found'
+        }
+        return jsonify(response_object)
 
     user_data = {}
     user_data['public_id'] = user.public_id
-    user_data['name'] = user.name
-    user_data['password'] = user.password
+    user_data['first'] = user.first_name
+    user_data['last'] = user.last_name
 
-    return jsonify({'user': user_data})
+    response_object = {
+            'status': 'success',
+            'user': user_data
+        }
+
+    return jsonify(response_object)
 
 
-# @app.route('/auth')
-# def authorize():
-#     payload = {'client_id': app.config['CLIENT_ID'], 'redirect_uri': app.config['REDIRECT_URL'], 'response_type': 'code'}
-#     params = urlencode(payload, quote_via=quote_plus)
-#     return redirect(app.config['AUTH_URL'] + params)
+@app.route('/auth')
+def authorize():
+    payload = {'client_id': app.config['CLIENT_ID'], 'redirect_uri': app.config['REDIRECT_URL'], 'response_type': 'code'}
+    params = urlencode(payload, quote_via=quote_plus)
+    return redirect(f"{app.config['AUTH_URL']}/?{params}")
+
+@app.route('/callback')
+def callback():
+    return redirect('http://127.0.0.1:4200/dashboard')
