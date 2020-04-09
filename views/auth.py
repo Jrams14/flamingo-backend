@@ -69,7 +69,6 @@ def login():
 
     try:
         user = User.query.filter_by(username = data['username']).first()
-        print(user.username)
 
         if user and check_password_hash(user.password, data['password']):
             token = jwt.encode({'public_id': user.public_id,'first' : user.first_name, 'last': user.last_name, 'username': user.username, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes = 30)}, app.config['SECRET_KEY'])
@@ -89,7 +88,6 @@ def login():
             return make_response(jsonify(response_object))
 
     except Exception as e:
-        print(e)
         response_object = {
             'status': 'fail',
             'message': 'Try again'

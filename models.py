@@ -7,3 +7,11 @@ class User(db.Model):
     first_name = db.Column(db.String(50))
     last_name = db.Column(db.String(50))
     username = db.Column(db.String(50))
+    post = db.relationship("Post")
+
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.public_id'))
+    spotify_uri = db.Column(db.String(50))
+    description = db.Column(db.String(120))
+
