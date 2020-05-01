@@ -13,6 +13,7 @@ migrate = Migrate(app, db)
 
 from views.auth import *
 from views.posts import *
+from views.user import *
 
 if __name__ == '__main__':
     app.run(debug = True)
