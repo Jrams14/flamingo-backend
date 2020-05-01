@@ -30,21 +30,6 @@ def token_required(f):
 
     return decorated
 
-
-@app.route('/user', methods=['GET'])
-def get_all_users():
-    users = User.query.all()
-
-    output = []
-
-    for user in users:
-        user_data = {}
-        user_data['public_id'] = user.public_id
-        user_data['first'] = user.first_name
-        user_data['last'] = user.last_name
-        output.append(user_data)
-    return jsonify({'users': output})
-
 @app.route('/register', methods=['POST'])
 def create_user():
     data = request.get_json()
@@ -54,7 +39,7 @@ def create_user():
     db.session.add(user)
     db.session.commit()
 
-    token = jwt.encode({'public_id': user.public_id,'first' : user.first_name, 'last': user.last_name, 'username': user.username, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes = 30)}, app.config['SECRET_KEY'])
+    token = jwt.encode({'public_id': user.public_id,'first' : user.first_name, 'last': user.last_name, 'username': user.username, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes = 60)}, app.config['SECRET_KEY'])
 
     response_object = {
                     'status': 'success',
@@ -88,35 +73,12 @@ def login():
             return make_response(jsonify(response_object))
 
     except Exception as e:
+        print(e)
         response_object = {
             'status': 'fail',
             'message': 'Try again'
         }
         return make_response(jsonify(response_object))
-
-@app.route('/user/<public_id>', methods=['GET'])
-def get_user(public_id):
-    user = User.query.filter_by(public_id = public_id).first()
-
-    if not user:
-        response_object = {
-            'status': 'fail',
-            'message': 'No user found'
-        }
-        return jsonify(response_object)
-
-    user_data = {}
-    user_data['public_id'] = user.public_id
-    user_data['first'] = user.first_name
-    user_data['last'] = user.last_name
-
-    response_object = {
-            'status': 'success',
-            'user': user_data
-        }
-
-    return jsonify(response_object)
-
 
 @app.route('/auth')
 def authorize():
